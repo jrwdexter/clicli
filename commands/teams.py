@@ -1,4 +1,6 @@
 import click
+import json
+from api import make_api_request
 
 
 @click.group(
