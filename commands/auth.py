@@ -1,5 +1,5 @@
 import click
-from os.path import expanduser
+from commands.config import config_get, config_set
 
 
 @click.group('auth', help='See and manage auth information')
@@ -7,18 +7,16 @@ def auth():
     pass
 
 
-@click.command('set-access-token',
-               help='Set your access token. Get it from Clickup.')
+@click.command('set-access-token')
 @click.argument('access_token')
 def set_access_token(access_token):
-    with open(expanduser('~/.clickuprc'), 'w') as file:
-        file.write(access_token)
-    click.echo(click.style('\nSuccessfully saved clickup token\n', fg='green'))
+    config_set('api-key', access_token)
 
 
+@click.command('get-access-token')
 def get_token():
-    with open(expanduser('~/.clickuprc')) as file:
-        return file.readline()
+    config_get(["api-key"])
 
 
 auth.add_command(set_access_token)
+auth.add_command(get_token)
