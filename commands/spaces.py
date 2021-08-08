@@ -56,7 +56,7 @@ def list_spaces(team_id, archived, include_features, include_statuses):
               default=False,
               required=False)
 def get_space(space_id, include_features, include_statuses):
-    team_id = value_or_config(team_id, 'team-id')
+    space_id = value_or_config(space_id, 'space-id')
     response = make_api_request('space/%s' % space_id)
     if not include_features and 'features' in response:
         del response['features']
