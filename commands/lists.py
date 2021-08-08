@@ -7,6 +7,11 @@ from commands.config import value_or_config
 CLICKUP_PRIORITIES = click.Choice([1, 2, 3, 4])
 
 
+def abort_if_false(ctx, param, value):
+    if not value:
+        ctx.abort()
+
+
 @click.group('lists', help='Get, create, update, delete, and more for lists')
 def lists():
     pass
@@ -110,5 +115,20 @@ def lists_list(space_id, folder_id, archived):
         click.echo(json.dumps(response, indent=4, sort_keys=True))
 
 
+@click.command('remove', help='Delete a list.')
+@click.option('-q',
+              '--quiet',
+              help='Do not prompt prior to deletion.',
+              prompt='Are you sure you want to delete the list? '
+              'This is not the same as archiving.',
+              is_flag=True,
+              expose_value=False,
+              callback=abort_if_false)
+def lists_remove(id):
+    response = make_api_request('lists/%s' % id, method='DELETE')
+    click.echo(json.dumps(response, indent=3, sort_keys=True))
+
+
 lists.add_command(lists_list)
 lists.add_command(lists_create)
+lists.add_command(lists_remove)
