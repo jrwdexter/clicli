@@ -30,7 +30,7 @@ def direct_get(config_key):
         click.echo(
             click.style('Error', fg='red') + ': ' +
             click.style(config_key, fg='green') +
-            ' not present in config file.')
+            ' not present in config file.', err=True)
 
 
 @click.group('config', help='Set config values')
