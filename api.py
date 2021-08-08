@@ -1,9 +1,9 @@
 import click
-from commands.auth import get_token
 import http.client
 import urllib
 import sys
 import json
+from commands.config import direct_get
 
 HOST = 'api.clickup.com'
 BASE_PATH = '/api/v2/'
@@ -11,7 +11,7 @@ BASE_PATH = '/api/v2/'
 
 def make_api_request(path):
     connection = http.client.HTTPSConnection(HOST)
-    headers = {'Authorization': get_token()}
+    headers = {'Authorization': direct_get('api-key')}
     url = urllib.parse.urljoin(BASE_PATH, path)
     if sys.stdout.isatty():
         click.echo(click.style(url, fg='blue'))

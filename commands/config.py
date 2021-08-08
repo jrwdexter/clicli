@@ -21,6 +21,13 @@ def value_or_config(value, config_key):
     return config_get(config_key)
 
 
+def direct_get(config_key):
+    ensure_config_file()
+    with open(CONFIG_FILE, 'r') as file:
+        config = json.load(file)
+        return config['api-key']
+
+
 @click.group('config', help='Set config values')
 def config():
     pass
