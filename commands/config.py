@@ -15,22 +15,23 @@ def ensure_config_file():
         click.echo('Created config file')
 
 
-def value_or_config(value, config_key):
+def value_or_config(value, config_key, silent=False):
     if value:
         return value
-    return direct_get(config_key)
+    return direct_get(config_key, silent)
 
 
-def direct_get(config_key):
+def direct_get(config_key, silent=False):
     ensure_config_file()
     with open(CONFIG_FILE, 'r') as file:
         config = json.load(file)
         if config_key in config:
             return config[config_key]
-        click.echo(
-            click.style('Error', fg='red') + ': ' +
-            click.style(config_key, fg='green') +
-            ' not present in config file.', err=True)
+        if not silent:
+            click.echo(
+                click.style('Error', fg='red') + ': ' +
+                click.style(config_key, fg='green') +
+                ' not present in config file.', err=True)
 
 
 @click.group('config', help='Set config values')
