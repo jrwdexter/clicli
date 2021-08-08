@@ -5,7 +5,7 @@ import os.path
 
 CONFIG_FILE = expanduser('~/.cliclirc')
 CONFIG_OPTIONS_TYPE = click.Choice(
-    ['space-id', 'team-id', 'workspace-id', 'user', 'api-key'])
+    ['space-id', 'team-id', 'workspace-id', 'user', 'api-key', 'folder-id'])
 
 
 def ensure_config_file():
@@ -28,10 +28,10 @@ def direct_get(config_key, silent=False):
         if config_key in config:
             return config[config_key]
         if not silent:
-            click.echo(
-                click.style('Error', fg='red') + ': ' +
-                click.style(config_key, fg='green') +
-                ' not present in config file.', err=True)
+            click.echo(click.style('Error', fg='red') + ': ' +
+                       click.style(config_key, fg='green') +
+                       ' not present in config file.',
+                       err=True)
 
 
 @click.group('config', help='Set config values')
@@ -50,7 +50,6 @@ def config_set(key, value):
         file.seek(0)
         file.write(json.dumps(config, indent=4, sort_keys=True))
         file.truncate()
-    pass
 
 
 @click.command('get', help='Get various configuration values')
@@ -67,6 +66,19 @@ def config_show():
         click.echo(file.read())
 
 
+@click.command('remove', help='Remove a specific key from the config file')
+@click.argument('key', type=CONFIG_OPTIONS_TYPE)
+def config_remove(key):
+    ensure_config_file()
+    with open(CONFIG_FILE, 'r+') as file:
+        config = json.load(file)
+        if key in config:
+            del config[key]
+            file.seek(0)
+            file.write(json.dumps(config, indent=4, sort_keys=True))
+            file.truncate()
+
+
 @click.command('setup',
                help='Quickly have help in setting up your .clicli file')
 def setup():
@@ -76,3 +88,4 @@ def setup():
 config.add_command(config_set)
 config.add_command(config_get)
 config.add_command(config_show)
+config.add_command(config_remove)
