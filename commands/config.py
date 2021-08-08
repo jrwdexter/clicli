@@ -18,14 +18,19 @@ def ensure_config_file():
 def value_or_config(value, config_key):
     if value:
         return value
-    return config_get(config_key)
+    return direct_get(config_key)
 
 
 def direct_get(config_key):
     ensure_config_file()
     with open(CONFIG_FILE, 'r') as file:
         config = json.load(file)
-        return config['api-key']
+        if config_key in config:
+            return config[config_key]
+        click.echo(
+            click.style('Error', fg='red') + ': ' +
+            click.style(config_key, fg='green') +
+            ' not present in config file.')
 
 
 @click.group('config', help='Set config values')
@@ -51,12 +56,7 @@ def config_set(key, value):
 @click.argument('key', type=CONFIG_OPTIONS_TYPE)
 def config_get(key):
     ensure_config_file()
-    with open(CONFIG_FILE, 'r') as file:
-        config = json.load(file)
-        if key in config:
-            click.echo(config[key])
-        else:
-            click.echo('No such config key found')
+    direct_get(key)
 
 
 @click.command('show', help='Show the full config file')

@@ -1,6 +1,7 @@
 import click
 import json
 from api import make_api_request
+from commands.config import value_or_config
 
 
 @click.group('spaces', help='List, view, update, and delete spaces')
@@ -30,6 +31,7 @@ def spaces():
               default=False,
               required=False)
 def list_spaces(team_id, archived, include_features, include_statuses):
+    team_id = value_or_config(team_id, 'team-id')
     response = make_api_request('team/%s/space?archived=%s' %
                                 (team_id, str(archived)))
     if 'spaces' in response:
