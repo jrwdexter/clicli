@@ -5,6 +5,11 @@ from api import make_api_request
 from commands.config import value_or_config
 
 
+def abort_if_false(ctx, param, value):
+    if not value:
+        ctx.abort()
+
+
 def find_folder_by_name(name: str, space_id: int, archived=False):
     response = make_api_request('space/%s/folder?archived=%s' %
                                 (space_id, str(archived)))
@@ -98,7 +103,8 @@ def folders_create(space_id, name):
 @click.option('-n',
               '--name',
               required=False,
-              help='The original name of the folder to rename.')
+              help='The original name of the folder to rename.',
+              prompt=True)
 @click.argument('new-name')
 @click.option('--id', help='Rename by ID instead of by name', required=False)
 @click.option('-s',
@@ -119,9 +125,7 @@ def folders_rename(name, space_id, id, new_name):
                 click.style('Warning', fg='orange') +
                 ': both name and ID provided. Defaulting to name.')
     if id:
-        response = make_api_request('folder/%s' % id,
-                                    method='PUT',
-                                    body=body)
+        response = make_api_request('folder/%s' % id, method='PUT', body=body)
     else:
         space_id = value_or_config(space_id, 'space-id')
         folder = find_folder_by_name(name, space_id)
@@ -137,7 +141,23 @@ def folders_rename(name, space_id, id, new_name):
     click.echo(json.dumps(response, indent=4, sort_keys=True))
 
 
+@click.command('remove', help='Delete a folder')
+@click.option('-q',
+              '--quiet',
+              help='Do not prompt prior to deletion.',
+              prompt='Are you sure you want to delete the list? '
+              'This is not the same as archiving.',
+              is_flag=True,
+              expose_value=False,
+              callback=abort_if_false)
+@click.argument('id')
+def folders_remove(id):
+    response = make_api_request('folder/%s' % id, method='DELETE')
+    click.echo(json.dumps(response, indent=4, sort_keys=True))
+
+
 folders.add_command(folders_list)
 folders.add_command(folders_get)
 folders.add_command(folders_create)
+folders.add_command(folders_rename)
 folders.add_command(folders_rename)
