@@ -123,7 +123,7 @@ def folders_rename(name, space_id, id, new_name):
         if sys.stdout.isatty():
             click.echo(
                 click.style('Warning', fg='orange') +
-                ': both name and ID provided. Defaulting to name.')
+                ': both name and ID provided. Defaulting to id.')
     if id:
         response = make_api_request('folder/%s' % id, method='PUT', body=body)
     else:
@@ -159,5 +159,4 @@ def folders_remove(id):
 folders.add_command(folders_list)
 folders.add_command(folders_get)
 folders.add_command(folders_create)
-folders.add_command(folders_rename)
 folders.add_command(folders_rename)

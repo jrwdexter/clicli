@@ -12,6 +12,24 @@ def abort_if_false(ctx, param, value):
         ctx.abort()
 
 
+def find_list_by_name(name: str,
+                      space_id: int = None,
+                      folder_id: int = None,
+                      archived=False):
+    if folder_id:
+        response = make_api_request('folder/%s/list?archived=%s' %
+                                    (folder_id, str(archived)))
+        for list in response['lists']:
+            if list['name'] == name:
+                return list
+    else:
+        response = make_api_request('space/%s/list?archived=%s' %
+                                    (space_id, str(archived)))
+        for list in response['lists']:
+            if list['name'] == name:
+                return list
+
+
 @click.group('lists', help='Get, create, update, delete, and more for lists')
 def lists():
     pass
@@ -22,8 +40,7 @@ def lists():
     help='Create a new list in a specific folder or space. '
     'If you specify --folder-id, the list will be created within a folder. '
     'Otherwise, it is contained within the space '
-    'specified or default in config file'
-)
+    'specified or default in config file')
 @click.argument('name')
 @click.argument('content', required=False)
 @click.option('-f',
@@ -117,7 +134,7 @@ def lists_list(space_id, folder_id, archived):
         click.echo(json.dumps(response, indent=4, sort_keys=True))
 
 
-@click.command('remove', help='Delete a list.')
+@click.command('remove', help='Delete a list')
 @click.option('-q',
               '--quiet',
               help='Do not prompt prior to deletion.',
@@ -128,10 +145,121 @@ def lists_list(space_id, folder_id, archived):
               callback=abort_if_false)
 @click.argument('id')
 def lists_remove(id):
-    response = make_api_request('lists/%s' % id, method='DELETE')
-    click.echo(json.dumps(response, indent=3, sort_keys=True))
+    response = make_api_request('list/%s' % id, method='DELETE')
+    click.echo(json.dumps(response, indent=4, sort_keys=True))
+
+
+@click.command('get', help='Get a list')
+@click.argument('id_or_name')
+@click.option('-f',
+              '--folder-id',
+              help='ID of the folder to get the list from.')
+@click.option('-s',
+              '--space-id',
+              help='ID of the space to get the folderless list from')
+def lists_get(id_or_name: str, space_id, folder_id):
+    if id_or_name.isnumeric():
+        response = make_api_request('list/%s' % id_or_name)
+        click.echo(json.dumps(response, indent=4, sort_keys=True))
+    else:
+        space_id = value_or_config(space_id, 'space-id', silent=True)
+        folder_id = value_or_config(folder_id, 'folder-id', silent=True)
+        click.echo(id_or_name)
+        small_response = find_list_by_name(id_or_name,
+                                           space_id=space_id,
+                                           folder_id=folder_id)
+        response = make_api_request('list/%s' % small_response['id'])
+        click.echo(json.dumps(response, indent=4, sort_keys=True))
+
+
+@click.command('update',
+               help='Renames a file by utilizing either the name or id option')
+@click.option('-n',
+              '--name',
+              required=False,
+              help='The original name of the list to rename.',
+              prompt=True)
+@click.argument('new-name')
+@click.option('-c', '--content', help='The content (string) of the list')
+@click.option('--id', help='Rename by ID instead of by name', required=False)
+@click.option('-s',
+              '--space-id',
+              help='If a name is specified, '
+              'look for lists in the given space. '
+              'Defaults to the space ID in the .cliclirc config.')
+@click.option('-f',
+              '--folder-id',
+              help='If a name is specified, '
+              'look for lists in the given folder. '
+              'Defaults to the folder ID in the .cliclirc config.')
+@click.option(
+    '-p',
+    '--priority',
+    help='The priority of the list: 1: Urgent, 2: High, 3: Medium, 4: Low',
+    type=CLICKUP_PRIORITIES)
+@click.option('-a', '--assignee', help='Assign the list to a specific user.')
+@click.option('-d', '--due-date', help='Specify a due date for the the list')
+@click.option('-t',
+              '--due-date-time',
+              help='Specify a due date time for the the list')
+@click.option('-s', '--status', help='Specify a status for the list')
+@click.option('--unset-status', help='Remove the status of the list')
+def lists_update(name, space_id, folder_id, id, new_name, priority, assignee,
+                 due_date, due_date_time, status, unset_status, content):
+    body = {
+        'name': new_name,
+        'content': content,
+        'due_date': due_date,
+        'due_date_time': due_date_time,
+        'priority': priority,
+        'assignee': assignee,
+        'status': status,
+        'unset_status': unset_status,
+    }
+    if not name and not id:
+        click.echo(click.style('Error', fg='red') +
+                   ': No name or id provided.',
+                   err=True)
+        return
+    if name and id:
+        if sys.stdout.isatty():
+            click.echo(
+                click.style('Warning', fg='orange') +
+                ': both name and ID provided. Defaulting to id.')
+    if id:
+        response = make_api_request('list/%s' % id, method='PUT', body=body)
+    else:
+        real_space_id = value_or_config(space_id, 'space-id')
+        real_folder_id = value_or_config(space_id, 'folder_id')
+        if folder_id or real_folder_id and not space_id:
+            # We are going to find the list within a folder
+            list = find_list_by_name(name, folder_id=real_folder_id)
+            if list is not None:
+                response = make_api_request('list/%s' % list['id'],
+                                            method='PUT',
+                                            body=body,
+                                            verbose=True)
+            else:
+                click.echo(
+                    click.style('Error', fg='red') + ': No such list found')
+                return
+        else:
+            # We are going to find the list within a folder
+            list = find_list_by_name(name, space_id=real_space_id)
+            if list is not None:
+                response = make_api_request('list/%s' % list['id'],
+                                            method='PUT',
+                                            body=body,
+                                            verbose=True)
+            else:
+                click.echo(
+                    click.style('Error', fg='red') + ': No such list found')
+                return
+    click.echo(json.dumps(response, indent=4, sort_keys=True))
 
 
 lists.add_command(lists_list)
 lists.add_command(lists_create)
 lists.add_command(lists_remove)
+lists.add_command(lists_get)
+lists.add_command(lists_update)
