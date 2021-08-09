@@ -19,14 +19,18 @@ def find_list_by_name(name: str,
     if folder_id:
         response = make_api_request('folder/%s/list?archived=%s' %
                                     (folder_id, str(archived)))
+        if response is None:
+            return
         for list in response['lists']:
-            if list['name'] == name:
+            if list['name'].upper() == name.upper():
                 return list
     else:
         response = make_api_request('space/%s/list?archived=%s' %
                                     (space_id, str(archived)))
+        if response is None:
+            return
         for list in response['lists']:
-            if list['name'] == name:
+            if list['name'].upper() == name.upper():
                 return list
 
 
@@ -187,8 +191,11 @@ def lists_get(id_or_name: str, space_id, folder_id):
         small_response = find_list_by_name(id_or_name,
                                            space_id=space_id,
                                            folder_id=folder_id)
-        response = make_api_request('list/%s' % small_response['id'])
-        click.echo(json.dumps(response, indent=4, sort_keys=True))
+        if small_response is not None:
+            response = make_api_request('list/%s' % small_response['id'])
+            click.echo(json.dumps(response, indent=4, sort_keys=True))
+        else:
+            click.echo(click.style('Error', fg='red') + ': No list found')
 
 
 @click.command('update',
