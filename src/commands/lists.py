@@ -110,9 +110,18 @@ def lists_create(name, folder_id, space_id, priority, assignee, content,
               is_flag=True,
               default=False,
               required=False)
-def lists_list(space_id, folder_id, archived):
+@click.option('--me',
+              help='Return lists assigned to me. '
+              'Your user is defined by ' +
+              click.style('config set user', fg='green') + '.',
+              is_flag=True,
+              default=False,
+              required=False)
+@click.option('-u', '--user', help='Return lists assigned to the given user.')
+def lists_list(space_id, folder_id, archived, me, user):
     real_space_id = value_or_config(space_id, 'space-id', silent=True)
     real_folder_id = value_or_config(folder_id, 'folder-id', silent=True)
+    user = value_or_config(user, 'user')
     if not real_folder_id and not real_space_id:
         click.echo(
             click.style('Error', fg='red') +
@@ -127,10 +136,20 @@ def lists_list(space_id, folder_id, archived):
     if folder_id or (real_folder_id and not space_id):
         response = make_api_request('folder/%s/list?archived=%s' %
                                     (real_folder_id, str(archived)))
+        if user or me:
+            lists = [
+                list for list in response['lists'] if list['assignee'] == user
+            ]
+            response['lists'] = lists
         click.echo(json.dumps(response, indent=4, sort_keys=True))
     else:
         response = make_api_request('space/%s/list?archived=%s' %
                                     (real_space_id, str(archived)))
+        if user or me:
+            lists = [
+                list for list in response['lists'] if list['assignee'] == user
+            ]
+            response['lists'] = lists
         click.echo(json.dumps(response, indent=4, sort_keys=True))
 
 
