@@ -103,7 +103,7 @@ def tasks_list(list_id, page, all, order, archived, reverse, subtasks,
         'include_closed':
         str(include_closed).lower(),
         'assignees[]':
-        str(statuses.split(',')) if assignees else None,
+        str(assignees.split(',')) if assignees else None,
         'due_date_gt':
         int(due_date_gt.timestamp()) if due_date_gt else None,
         'due_date_lt':
