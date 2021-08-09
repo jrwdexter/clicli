@@ -188,7 +188,6 @@ def lists_get(id_or_name: str, space_id, folder_id):
     else:
         space_id = value_or_config(space_id, 'space-id', silent=True)
         folder_id = value_or_config(folder_id, 'folder-id', silent=True)
-        click.echo(id_or_name)
         small_response = find_list_by_name(id_or_name,
                                            space_id=space_id,
                                            folder_id=folder_id)
