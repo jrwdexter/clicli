@@ -4,7 +4,7 @@ import json
 from api import make_api_request
 from commands.config import value_or_config
 
-CLICKUP_PRIORITIES = click.Choice([1, 2, 3, 4])
+CLICKUP_PRIORITIES = click.Choice(['1', '2', '3', '4'])
 
 
 def abort_if_false(ctx, param, value):
@@ -19,9 +19,11 @@ def lists():
 
 @click.command(
     'create',
-    help='Create a new list in a specific folder or space.'
-    'If you specify --folder-id, the list will be created within a folder.'
-    'Otherwise, it is contained within the space')
+    help='Create a new list in a specific folder or space. '
+    'If you specify --folder-id, the list will be created within a folder. '
+    'Otherwise, it is contained within the space '
+    'specified or default in config file'
+)
 @click.argument('name')
 @click.argument('content', required=False)
 @click.option('-f',
@@ -124,6 +126,7 @@ def lists_list(space_id, folder_id, archived):
               is_flag=True,
               expose_value=False,
               callback=abort_if_false)
+@click.argument('id')
 def lists_remove(id):
     response = make_api_request('lists/%s' % id, method='DELETE')
     click.echo(json.dumps(response, indent=3, sort_keys=True))
